@@ -1,0 +1,31 @@
+# Build outputs
+bin/
+build/
+*.exe
+*.o
+*.obj
+*.out
+
+# IDE files
+*.dev
+*.layout
+*.cbp
+*.depend
+*.workspace
+*.opendb
+*.user
+*.suo
+.vs/
+.idea/
+*.swp
+*.swo
+*~
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+
+# OS
+Thumbs.db
+.DS_Store
