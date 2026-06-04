@@ -315,6 +315,64 @@ Person *PersonRepository::findById(int id) const {
     return person;
 }
 
+bool PersonRepository::update(const Person &person) {
+    if (!pingOrError()) return false;
+
+    MYSQL *conn = db.getConnection();
+    MYSQL_STMT *stmt = mysql_stmt_init(conn);
+    if (!stmt) return false;
+
+    const char *query = "UPDATE Customer SET name=?, fLastname=?, mLastname=?, age=? WHERE id=?";
+    if (mysql_stmt_prepare(stmt, query, strlen(query)) != 0) {
+        std::cerr << "ERROR: " << mysql_stmt_error(stmt) << std::endl;
+        mysql_stmt_close(stmt);
+        return false;
+    }
+
+    std::string name = person.getName();
+    std::string fLastname = person.getFLastname();
+    std::string mLastname = person.getMLastname();
+    int age = person.getAge();
+    int id = person.getId();
+
+    MYSQL_BIND bind[5];
+    memset(bind, 0, sizeof(bind));
+
+    bind[0].buffer_type = MYSQL_TYPE_STRING;
+    bind[0].buffer = (void *)name.c_str();
+    bind[0].buffer_length = name.length();
+
+    bind[1].buffer_type = MYSQL_TYPE_STRING;
+    bind[1].buffer = (void *)fLastname.c_str();
+    bind[1].buffer_length = fLastname.length();
+
+    bind[2].buffer_type = MYSQL_TYPE_STRING;
+    bind[2].buffer = (void *)mLastname.c_str();
+    bind[2].buffer_length = mLastname.length();
+
+    bind[3].buffer_type = MYSQL_TYPE_LONG;
+    bind[3].buffer = &age;
+
+    bind[4].buffer_type = MYSQL_TYPE_LONG;
+    bind[4].buffer = &id;
+
+    if (mysql_stmt_bind_param(stmt, bind) != 0) {
+        std::cerr << "ERROR: " << mysql_stmt_error(stmt) << std::endl;
+        mysql_stmt_close(stmt);
+        return false;
+    }
+
+    if (mysql_stmt_execute(stmt) != 0) {
+        std::cerr << "ERROR: " << mysql_stmt_error(stmt) << std::endl;
+        mysql_stmt_close(stmt);
+        return false;
+    }
+
+    mysql_stmt_close(stmt);
+    std::cout << "Person updated successfully." << std::endl;
+    return true;
+}
+
 bool PersonRepository::removeById(int id) {
     if (!pingOrError()) return false;
 

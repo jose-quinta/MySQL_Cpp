@@ -1,10 +1,10 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.15)
 project(MySQL_Cpp VERSION 1.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Try common MySQL / MariaDB Connector/C locations
+# ── MySQL / MariaDB Connector/C ──────────────────────────────────────────
 set(MYSQL_SEARCH_PATHS
     "C:/Program Files/MariaDB 12.3"
     "C:/Program Files/MariaDB 10.11"
@@ -44,15 +44,28 @@ endif()
 message(STATUS "MySQL include: ${MYSQL_INCLUDE_DIR}")
 message(STATUS "MySQL library: ${MYSQL_LIBRARY}")
 
+# ── FLTK ─────────────────────────────────────────────────────────────────
+# Set the path to the built FLTK
+set(FLTK_DIR "C:/Users/User/Documents/Proyectos/Cpp/fltk/build"
+    CACHE PATH "Path to FLTK build directory")
+
+find_package(FLTK CONFIG REQUIRED)
+
+# ── Sources ──────────────────────────────────────────────────────────────
 set(SOURCES
     src/main.cpp
     src/db/Database.cpp
     src/model/Person.cpp
     src/repository/PersonRepository.cpp
-    src/ui/Console.cpp
+    src/ui/MainWindow.cpp
 )
 
-add_executable(${PROJECT_NAME} ${SOURCES})
+# ── Executable ───────────────────────────────────────────────────────────
+if(WIN32)
+    add_executable(${PROJECT_NAME} WIN32 ${SOURCES})
+else()
+    add_executable(${PROJECT_NAME} ${SOURCES})
+endif()
 
 target_include_directories(${PROJECT_NAME}
     PRIVATE
@@ -63,4 +76,6 @@ target_include_directories(${PROJECT_NAME}
 target_link_libraries(${PROJECT_NAME}
     PRIVATE
         ${MYSQL_LIBRARY}
+        fltk::fltk
+        fltk::images
 )

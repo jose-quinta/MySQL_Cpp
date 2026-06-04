@@ -19,6 +19,7 @@ public:
     std::vector<Person> getAll() const;
     std::vector<Person> findByName(const std::string &name) const;
     Person *findById(int id) const;
+    bool update(const Person &person);
     bool removeById(int id);
 };
 

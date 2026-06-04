@@ -1,32 +1,29 @@
 # MySQL_Cpp
 
-CRUD de personas en consola usando C++ y MySQL Connector/C con prepared statements.
+CRUD de personas con interfaz gráfica (FLTK) y MySQL/MariaDB Connector/C con prepared statements.
 
 ## Estructura
 
 ```
 MySQL_Cpp/
 ├── include/
-│   ├── db/             # Conexión a base de datos
-│   │   └── Database.h
-│   ├── model/          # Modelos de dominio
-│   │   └── Person.h
-│   ├── repository/     # Capa de acceso a datos
-│   │   └── PersonRepository.h
-│   └── ui/             # Interfaz de usuario
-│       └── Console.h
+│   ├── db/Database.h              # Conexión MySQL con RAII
+│   ├── model/Person.h             # Modelo de dominio
+│   ├── repository/PersonRepository.h  # CRUD con prepared statements
+│   └── ui/
+│       ├── MainWindow.h           # Ventana principal (FLTK)
+│       └── Console.h              # Interfaz de consola (alternativa)
 ├── src/
-│   ├── db/
-│   │   └── Database.cpp
-│   ├── model/
-│   │   └── Person.cpp
-│   ├── repository/
-│   │   └── PersonRepository.cpp
+│   ├── db/Database.cpp
+│   ├── model/Person.cpp
+│   ├── repository/PersonRepository.cpp
 │   ├── ui/
+│   │   ├── MainWindow.cpp
 │   │   └── Console.cpp
 │   └── main.cpp
 ├── lib/
-│   └── libmysql.dll
+│   ├── libmysql.dll
+│   └── libmariadb.dll
 ├── CMakeLists.txt
 ├── Makefile
 ├── .gitignore
@@ -36,34 +33,36 @@ MySQL_Cpp/
 ## Requisitos
 
 - Compilador C++11 (MinGW, MSVC, etc.)
-- MySQL Server 5.7+ con Connector/C
-- Base de datos `person_test` con tabla:
+- MySQL Server 5.7+ / MariaDB 10+ con Connector/C
+- FLTK 1.4+ (biblioteca GUI)
+- Base de datos `person_test` con tabla `Customer`:
   ```sql
   CREATE TABLE Customer (
       id INT AUTO_INCREMENT PRIMARY KEY,
-      fullname VARCHAR(100),
+      name VARCHAR(100),
+      fLastname VARCHAR(100),
+      mLastname VARCHAR(100),
       age INT
   );
   ```
-- Usuario `c++` con contraseña `c++` y permisos en `person_test`
 
 ## Compilar
 
-### Make (MinGW):
-```bash
-make
-```
-
-### CMake:
+### Con CMake:
 ```bash
 mkdir build && cd build
-cmake ..
-make
+cmake -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release ..
+mingw32-make
+```
+
+Copiar la DLL de MariaDB al directorio de salida:
+```bash
+cp ../lib/libmariadb.dll .
 ```
 
 Ejecutar:
 ```bash
-bin/MySQL.exe
+MySQL_Cpp.exe
 ```
 
 ## Capas
@@ -73,4 +72,4 @@ bin/MySQL.exe
 | **Database** | `db/` | Conexión RAII, ciclo de vida de la conexión |
 | **Model** | `model/` | Entidad Person con lógica de dominio |
 | **Repository** | `repository/` | CRUD con prepared statements |
-| **UI** | `ui/` | Menú interactivo por consola |
+| **UI** | `ui/` | Interfaz gráfica (FLTK) o consola |
