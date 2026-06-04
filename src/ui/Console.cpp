@@ -19,15 +19,23 @@ void Console::handleInsert() {
     std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 
     std::string name;
+    std::string fLastname;
+    std::string mLastname;
     int age;
 
-    std::cout << "Full name: ";
+    std::cout << "Name: ";
     std::getline(std::cin, name);
+
+    std::cout << "Father's Last Name: ";
+    std::getline(std::cin, fLastname);
+
+    std::cout << "Mother's Last Name: ";
+    std::getline(std::cin, mLastname);
 
     std::cout << "Age: ";
     std::cin >> age;
 
-    Person person(0, name, age);
+    Person person(0, name, fLastname, mLastname, age);
     repository.insert(person);
 }
 

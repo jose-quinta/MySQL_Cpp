@@ -39,7 +39,7 @@ MySQL_Cpp/
 - MySQL Server 5.7+ con Connector/C
 - Base de datos `person_test` con tabla:
   ```sql
-  CREATE TABLE first_test (
+  CREATE TABLE Customer (
       id INT AUTO_INCREMENT PRIMARY KEY,
       fullname VARCHAR(100),
       age INT

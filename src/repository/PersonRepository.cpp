@@ -22,7 +22,9 @@ bool PersonRepository::createTableIfNotExists()
     const char *query =
         "CREATE TABLE IF NOT EXISTS Customer ("
         "  id INT AUTO_INCREMENT PRIMARY KEY,"
-        "  fullname VARCHAR(100),"
+        "  name VARCHAR(100),"
+        "  fLastname VARCHAR(100),"
+        "  mLastname VARCHAR(100),"
         "  age INT"
         ")";
 
@@ -46,25 +48,35 @@ bool PersonRepository::insert(const Person &person) {
         return false;
     }
 
-    const char *query = "INSERT INTO Customer(fullname, age) VALUES(?, ?)";
+    const char *query = "INSERT INTO Customer(name, fLastname, mLastname, age) VALUES(?, ?, ?, ?)";
     if (mysql_stmt_prepare(stmt, query, strlen(query)) != 0) {
         std::cerr << "ERROR: " << mysql_stmt_error(stmt) << std::endl;
         mysql_stmt_close(stmt);
         return false;
     }
 
-    std::string name = person.getFullName();
+    std::string name = person.getName();
+    std::string fLastname = person.getFLastname();
+    std::string mLastname = person.getMLastname();
     int age = person.getAge();
 
-    MYSQL_BIND bind[2];
+    MYSQL_BIND bind[4];
     memset(bind, 0, sizeof(bind));
 
     bind[0].buffer_type = MYSQL_TYPE_STRING;
     bind[0].buffer = (void *)name.c_str();
     bind[0].buffer_length = name.length();
 
-    bind[1].buffer_type = MYSQL_TYPE_LONG;
-    bind[1].buffer = &age;
+    bind[1].buffer_type = MYSQL_TYPE_STRING;
+    bind[1].buffer = (void *)fLastname.c_str();
+    bind[1].buffer_length = fLastname.length();
+
+    bind[2].buffer_type = MYSQL_TYPE_STRING;
+    bind[2].buffer = (void *)mLastname.c_str();
+    bind[2].buffer_length = mLastname.length();
+
+    bind[3].buffer_type = MYSQL_TYPE_LONG;
+    bind[3].buffer = &age;
 
     if (mysql_stmt_bind_param(stmt, bind) != 0) {
         std::cerr << "ERROR: " << mysql_stmt_error(stmt) << std::endl;
@@ -89,7 +101,7 @@ std::vector<Person> PersonRepository::getAll() const {
     if (!pingOrError()) return people;
 
     MYSQL *conn = db.getConnection();
-    if (mysql_query(conn, "SELECT id, fullname, age FROM Customer") != 0) {
+    if (mysql_query(conn, "SELECT id, name, fLastname, mLastname, age FROM Customer") != 0) {
         std::cerr << "ERROR: " << mysql_error(conn) << std::endl;
         return people;
     }
@@ -101,8 +113,10 @@ std::vector<Person> PersonRepository::getAll() const {
     while ((row = mysql_fetch_row(res))) {
         int id = row[0] ? atoi(row[0]) : 0;
         std::string name = row[1] ? row[1] : "";
-        int age = row[2] ? atoi(row[2]) : 0;
-        people.emplace_back(id, name, age);
+        std::string fLastname = row[2] ? row[2] : "";
+        std::string mLastname = row[3] ? row[3] : "";
+        int age = row[4] ? atoi(row[4]) : 0;
+        people.emplace_back(id, name, fLastname, mLastname, age);
     }
 
     mysql_free_result(res);
@@ -119,7 +133,7 @@ std::vector<Person> PersonRepository::findByName(const std::string &name) const 
     MYSQL_STMT *stmt = mysql_stmt_init(conn);
     if (!stmt) return people;
 
-    const char *query = "SELECT id, fullname, age FROM Customer WHERE fullname = ?";
+    const char *query = "SELECT id, name, fLastname, mLastname, age FROM Customer WHERE name = ?";
     if (mysql_stmt_prepare(stmt, query, strlen(query)) != 0) {
         mysql_stmt_close(stmt);
         return people;
@@ -147,14 +161,18 @@ std::vector<Person> PersonRepository::findByName(const std::string &name) const 
         return people;
     }
 
-    MYSQL_BIND result[3];
+    MYSQL_BIND result[5];
     memset(result, 0, sizeof(result));
 
     int idVal;
     char nameBuf[256];
     unsigned long nameLen;
+    char fLastnameBuf[256];
+    unsigned long fLastnameLen;
+    char mLastnameBuf[256];
+    unsigned long mLastnameLen;
     int ageVal;
-    my_bool isNull[3];
+    my_bool isNull[5];
 
     result[0].buffer_type = MYSQL_TYPE_LONG;
     result[0].buffer = &idVal;
@@ -166,9 +184,21 @@ std::vector<Person> PersonRepository::findByName(const std::string &name) const 
     result[1].length = &nameLen;
     result[1].is_null = &isNull[1];
 
-    result[2].buffer_type = MYSQL_TYPE_LONG;
-    result[2].buffer = &ageVal;
+    result[2].buffer_type = MYSQL_TYPE_STRING;
+    result[2].buffer = fLastnameBuf;
+    result[2].buffer_length = sizeof(fLastnameBuf);
+    result[2].length = &fLastnameLen;
     result[2].is_null = &isNull[2];
+
+    result[3].buffer_type = MYSQL_TYPE_STRING;
+    result[3].buffer = mLastnameBuf;
+    result[3].buffer_length = sizeof(mLastnameBuf);
+    result[3].length = &mLastnameLen;
+    result[3].is_null = &isNull[3];
+
+    result[4].buffer_type = MYSQL_TYPE_LONG;
+    result[4].buffer = &ageVal;
+    result[4].is_null = &isNull[4];
 
     if (mysql_stmt_bind_result(stmt, result) != 0) {
         mysql_free_result(res);
@@ -179,8 +209,10 @@ std::vector<Person> PersonRepository::findByName(const std::string &name) const 
     mysql_stmt_store_result(stmt);
 
     while (mysql_stmt_fetch(stmt) == 0) {
-        std::string personName(nameBuf, nameLen);
-        people.emplace_back(idVal, personName, ageVal);
+        std::string name(nameBuf, nameLen);
+        std::string fLastname(fLastnameBuf, fLastnameLen);
+        std::string mLastname(mLastnameBuf, mLastnameLen);
+        people.emplace_back(idVal, name, fLastname, mLastname, ageVal);
     }
 
     mysql_free_result(res);
@@ -196,7 +228,7 @@ Person *PersonRepository::findById(int id) const {
     MYSQL_STMT *stmt = mysql_stmt_init(conn);
     if (!stmt) return nullptr;
 
-    const char *query = "SELECT id, fullname, age FROM Customer WHERE id = ?";
+    const char *query = "SELECT id, name, fLastname, mLastname, age FROM Customer WHERE id = ?";
     if (mysql_stmt_prepare(stmt, query, strlen(query)) != 0) {
         mysql_stmt_close(stmt);
         return nullptr;
@@ -223,14 +255,18 @@ Person *PersonRepository::findById(int id) const {
         return nullptr;
     }
 
-    MYSQL_BIND result[3];
+    MYSQL_BIND result[5];
     memset(result, 0, sizeof(result));
 
     int idVal;
     char nameBuf[256];
     unsigned long nameLen;
+    char fLastnameBuf[256];
+    unsigned long fLastnameLen;
+    char mLastnameBuf[256];
+    unsigned long mLastnameLen;
     int ageVal;
-    my_bool isNull[3];
+    my_bool isNull[5];
 
     result[0].buffer_type = MYSQL_TYPE_LONG;
     result[0].buffer = &idVal;
@@ -242,9 +278,21 @@ Person *PersonRepository::findById(int id) const {
     result[1].length = &nameLen;
     result[1].is_null = &isNull[1];
 
-    result[2].buffer_type = MYSQL_TYPE_LONG;
-    result[2].buffer = &ageVal;
+    result[2].buffer_type = MYSQL_TYPE_STRING;
+    result[2].buffer = fLastnameBuf;
+    result[2].buffer_length = sizeof(fLastnameBuf);
+    result[2].length = &fLastnameLen;
     result[2].is_null = &isNull[2];
+
+    result[3].buffer_type = MYSQL_TYPE_STRING;
+    result[3].buffer = mLastnameBuf;
+    result[3].buffer_length = sizeof(mLastnameBuf);
+    result[3].length = &mLastnameLen;
+    result[3].is_null = &isNull[3];
+
+    result[4].buffer_type = MYSQL_TYPE_LONG;
+    result[4].buffer = &ageVal;
+    result[4].is_null = &isNull[4];
 
     if (mysql_stmt_bind_result(stmt, result) != 0) {
         mysql_free_result(res);
@@ -256,8 +304,10 @@ Person *PersonRepository::findById(int id) const {
 
     Person *person = nullptr;
     if (mysql_stmt_fetch(stmt) == 0) {
-        std::string personName(nameBuf, nameLen);
-        person = new Person(idVal, personName, ageVal);
+        std::string name(nameBuf, nameLen);
+        std::string fLastname(fLastnameBuf, fLastnameLen);
+        std::string mLastname(mLastnameBuf, mLastnameLen);
+        person = new Person(idVal, name, fLastname, mLastname, ageVal);
     }
 
     mysql_free_result(res);

@@ -1,16 +1,22 @@
 #include "model/Person.h"
 #include <sstream>
 
-Person::Person() : id(0), fullName(""), age(0) {}
+Person::Person() : id(0), name(""), fLastname(""), mLastname(""), age(0) {}
 
-Person::Person(int id, const std::string &fullName, int age)
-    : id(id), fullName(fullName), age(age) {}
+Person::Person(int id, const std::string &name, const std::string &fLastname, const std::string &mLastname, int age)
+    : id(id), name(name), fLastname(fLastname), mLastname(mLastname), age(age) {}
 
 int Person::getId() const { return id; }
 void Person::setId(int id) { this->id = id; }
 
-std::string Person::getFullName() const { return fullName; }
-void Person::setFullName(const std::string &fullName) { this->fullName = fullName; }
+std::string Person::getName() const { return this->name; }
+void Person::setName(const std::string &name) { this->name = name; }
+
+std::string Person::getFLastname() const { return this->fLastname; }
+void Person::setFLastname(const std::string &fLastname) { this->fLastname = fLastname; }
+
+std::string Person::getMLastname() const { return this->mLastname; }
+void Person::setMLastname(const std::string &mLastname) { this->mLastname = mLastname; }
 
 int Person::getAge() const { return age; }
 void Person::setAge(int age) { this->age = age; }
@@ -18,7 +24,7 @@ void Person::setAge(int age) { this->age = age; }
 std::string Person::toString() const {
     std::stringstream out;
     out << "Id: " << id << "\n"
-        << "Full Name: " << fullName << "\n"
+        << "Full Name: " << name << " " << fLastname << " " << mLastname << "\n"
         << "Age: " << age << "\n"
         << getAgeCategory() << "\n";
     return out.str();
